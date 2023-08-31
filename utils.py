@@ -43,5 +43,21 @@ def get_ip(node: Node) -> None:
 
     return ip
     
-    
 
+def set_ip(node, ip_addr, gateway_addr) -> None:
+    """
+    The function `set_ip` sets the IP address and gateway address of a node using a telnet connection.
+    
+    :param node: The `node` parameter represents the node or device on which you want to set the IP
+    address and gateway address
+    :param ip_addr: The `ip_addr` parameter is the IP address that you want to set for the node. It
+    should be a string representing a valid IP address, such as "192.168.0.1"
+    :param gateway_addr: The `gateway_addr` parameter is the IP address of the gateway that the node
+    will use to access other networks. It is the IP address of the router or network device that
+    connects the node's network to other networks
+    """
+
+    console = telnetlib.Telnet('127.0.0.1', node.console, timeout=5)
+    cmd = f'ip {ip_addr} {gateway_addr}\n'
+    console.write(cmd.encode('utf-8'))
+    console.close()
