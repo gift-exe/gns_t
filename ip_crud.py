@@ -1,6 +1,7 @@
 import re
 from gns3fy import Node
 import telnetlib
+import time
 
 
 
@@ -48,8 +49,10 @@ def set_ip(node, ip_addr, gateway_addr) -> None:
     will use to access other networks. It is the IP address of the router or network device that
     connects the node's network to other networks
     """
-    node.open
+
     console = telnetlib.Telnet('127.0.0.1', node.console, timeout=5)
     cmd = f'ip {ip_addr} {gateway_addr}\n'
     console.write(cmd.encode('utf-8'))
+    time.sleep(3)
     console.close()
+    print(f'{node.name} ip assigned successfully {ip_addr}')
