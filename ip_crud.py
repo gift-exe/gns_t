@@ -55,4 +55,3 @@ def set_ip(node, ip_addr, gateway_addr) -> None:
     console.write(cmd.encode('utf-8'))
     time.sleep(3)
     console.close()
-    print(f'{node.name} ip assigned successfully {ip_addr}')

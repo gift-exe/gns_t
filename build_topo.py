@@ -1,5 +1,6 @@
 from gns3fy import Node, Link
-
+import multiprocessing
+from ip_crud import set_ip, get_ip
 
 
 class TopoBuilder():
@@ -13,18 +14,32 @@ class TopoBuilder():
         self.project = project
 
     def build(self, n_vpcs, n_switches, n_host_to_switch):
-        '''
-            call this to build the topology.
-            consisting of switches and vpcs (for now)
-        '''
+        """
+        The `build` function creates a network topology consisting of VPCs and switches, and links them
+        together according to a specific pattern.
+        
+        :param n_vpcs: The parameter `n_vpcs` represents the number of VPCs (Virtual Private Computer Simulators) to be
+        created in the topology
+        :param n_switches: The parameter `n_switches` represents the number of switches to be created in the
+        topology
+        :param n_host_to_switch: The parameter `n_host_to_switch` represents the number of hosts that are
+        connected to each switch
+        :return: a tuple containing two lists: `vpcs` and `switches`.
+
+        :HINT: You should probably call the assign_ips function to give each vpcs their ip addresses
+        """
 
         #create vpcs(es)
         for i in range(n_vpcs):
-            Node(project_id=self.project.project_id, name=f'pc{i+1}', connector=self.server, template='VPCS').create()
+            node = Node(project_id=self.project.project_id, name=f'pc{i+1}', connector=self.server, template='VPCS')
+            node.create()
+            node.start()
 
         #create switches
         for i in range(n_switches):
-            Node(project_id=self.project.project_id, name=f's{i+1}', connector=self.server, template='Ethernet switch').create()
+            node = Node(project_id=self.project.project_id, name=f's{i+1}', connector=self.server, template='Ethernet switch')
+            node.create()
+            node.start()
 
         #refresh project to get new nodes
         self.project.get()
@@ -54,9 +69,36 @@ class TopoBuilder():
             ]
             Link(project_id=self.project.project_id, nodes=nodes, connector=self.server).create()
 
+        return (vpcs, switches)
+
+    def assign_ips(self, vpcs):
+        """
+        The function assigns IP addresses to VPCs and returns a list of tuples containing the VPC names
+        and their corresponding IP addresses.
         
+        :param vpcs: The `vpcs` parameter is a list of VPC objects. Each VPC object represents a virtual
+        private cloud and has a `name` attribute
+        :return: a list of tuples, where each tuple contains the name of a VPC node and its
+        corresponding IP address.
+        """
+        processes = []
 
+        #assign ip addresses to vpcs
+        for pc in vpcs:
+            addr = f'192.168.1.{pc.name[-1]}'
+            gtway = '255.0.0.0'
+            process = multiprocessing.Process(target=set_ip, args=[pc, addr, gtway])
+            processes.append(process)
+            process.start()
 
+        #wait till all the processes run completely before going on
+        for process in processes:
+            process.join()
+
+        self.project.get()
+        vpcs_ips = [(node.name, get_ip(node)) for node in self.project.nodes if node.node_type == 'vpcs']
+        return vpcs_ips
+            
 
 
 
